@@ -130,7 +130,8 @@ fun LoginScreen() {
                 "Don't have an account? Sign Up",
                 color = Color.White,
                 modifier = Modifier.clickable {
-                    // TODO: Navigate to SignupPageActivity()
+                    val intent = Intent(context, SignupPageActivity::class.java)
+                    context.startActivity(intent)
                 }
             )
         }
