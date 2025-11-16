@@ -1,5 +1,6 @@
 package com.example.skillflow
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -25,6 +26,7 @@ import androidx.compose.ui.unit.sp
 import com.example.skillflow.ui.theme.SkillFlowTheme
 import kotlinx.coroutines.delay
 import androidx.compose.animation.core.Animatable
+import androidx.compose.ui.platform.LocalContext
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -40,26 +42,27 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun SplashScreen() {
-    // Simulate splash time before showing text fade-in
+    val context = LocalContext.current
     val textAlpha = remember { Animatable(0f) }
 
+    // Animation + Navigation
     LaunchedEffect(Unit) {
-        // Splash delay, then fade in text
-        delay(800) // time to show just the image first
+        delay(800) // show image first
         textAlpha.animateTo(
             targetValue = 1f,
             animationSpec = tween(durationMillis = 800, easing = LinearEasing)
         )
-        // You can navigate after total splash if you wish:
-        // delay(1000)
-        // startActivity(Intent(context, LoginActivity::class.java))
+
+        // Wait a moment then navigate
+        delay(900)
+        context.startActivity(Intent(context, LoginPageActivity::class.java))
     }
 
+    // UI
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
-        // Background image (place "learning.jpg/png" in res/drawable)
         Image(
             painter = painterResource(id = R.drawable.learning),
             contentDescription = "Splash background",
@@ -67,7 +70,6 @@ fun SplashScreen() {
             contentScale = ContentScale.Crop
         )
 
-        // Overlay text (shifted upward) with fade-in alpha
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
@@ -75,14 +77,14 @@ fun SplashScreen() {
                 .fillMaxSize()
                 .padding(24.dp)
                 .offset(y = (-80).dp)
-                .alpha(textAlpha.value) // fade-in effect
+                .alpha(textAlpha.value)
         ) {
             Text(
                 text = "SkillFlow",
                 style = MaterialTheme.typography.headlineLarge.copy(
                     fontSize = 40.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF0D47A1) // dark blue
+                    color = Color(0xFF0D47A1)
                 ),
                 textAlign = TextAlign.Center
             )
@@ -93,8 +95,8 @@ fun SplashScreen() {
                 text = "Learn new skills effortlessly",
                 style = MaterialTheme.typography.bodyLarge.copy(
                     fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold, // bold as requested
-                    color = Color(0xFF1565C0) // medium blue
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF1565C0)
                 ),
                 textAlign = TextAlign.Center
             )
