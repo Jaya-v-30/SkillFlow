@@ -143,9 +143,9 @@ fun LoginScreen(auth: FirebaseAuth) {
                                             Toast.LENGTH_SHORT
                                         ).show()
 
-                                        // TODO: Replace with your real HomeActivity
-                                        // val intent = Intent(context, HomeActivity::class.java)
-                                        // context.startActivity(intent)
+
+                                         val intent = Intent(context, DashboardActivity::class.java)
+                                         context.startActivity(intent)
                                     } else {
                                         Toast.makeText(
                                             context,
