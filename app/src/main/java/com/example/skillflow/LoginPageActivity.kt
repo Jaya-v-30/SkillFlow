@@ -29,26 +29,33 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.skillflow.ui.theme.SkillFlowTheme
+import com.google.firebase.auth.FirebaseAuth
 
 class LoginPageActivity : ComponentActivity() {
+
+    private lateinit var auth: FirebaseAuth
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
+        auth = FirebaseAuth.getInstance()
+
         setContent {
             SkillFlowTheme {
-                LoginScreen()
+                LoginScreen(auth)
             }
         }
     }
 }
 
 @Composable
-fun LoginScreen() {
+fun LoginScreen(auth: FirebaseAuth) {
     val context = LocalContext.current
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
+    var isLoading by remember { mutableStateOf(false) }
 
     // Background Gradient
     Box(
@@ -96,9 +103,12 @@ fun LoginScreen() {
                 leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
                 singleLine = true,
                 visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Password),
+                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                    keyboardType = KeyboardType.Password
+                ),
                 trailingIcon = {
-                    val icon = if (passwordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility
+                    val icon =
+                        if (passwordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility
                     IconButton(onClick = { passwordVisible = !passwordVisible }) {
                         Icon(icon, contentDescription = null)
                     }
@@ -111,17 +121,55 @@ fun LoginScreen() {
             // Login Button
             Button(
                 onClick = {
-                    if (email.isNotBlank() && password.isNotBlank()) {
-                        Toast.makeText(context, "Logged in!", Toast.LENGTH_SHORT).show()
-                        // TODO: open Home screen later
-                    } else {
-                        Toast.makeText(context, "Please enter credentials", Toast.LENGTH_SHORT).show()
+                    if (isLoading) return@Button
+
+                    when {
+                        email.isBlank() || password.isBlank() -> {
+                            Toast.makeText(
+                                context,
+                                "Please enter email and password",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                        else -> {
+                            isLoading = true
+                            auth.signInWithEmailAndPassword(email.trim(), password)
+                                .addOnCompleteListener { task ->
+                                    isLoading = false
+                                    if (task.isSuccessful) {
+                                        Toast.makeText(
+                                            context,
+                                            "Login successful",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+
+                                        // TODO: Replace with your real HomeActivity
+                                        // val intent = Intent(context, HomeActivity::class.java)
+                                        // context.startActivity(intent)
+                                    } else {
+                                        Toast.makeText(
+                                            context,
+                                            task.exception?.message ?: "Login failed",
+                                            Toast.LENGTH_LONG
+                                        ).show()
+                                    }
+                                }
+                        }
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp)
+                shape = RoundedCornerShape(12.dp),
+                enabled = !isLoading
             ) {
-                Text("Login")
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        strokeWidth = 2.dp,
+                        color = Color.White
+                    )
+                } else {
+                    Text("Login")
+                }
             }
 
             Spacer(modifier = Modifier.height(16.dp))

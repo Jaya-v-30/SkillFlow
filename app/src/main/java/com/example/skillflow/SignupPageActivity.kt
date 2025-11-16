@@ -30,21 +30,30 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.skillflow.ui.theme.SkillFlowTheme
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.userProfileChangeRequest
+
 
 class SignupPageActivity : ComponentActivity() {
+
+    private lateinit var auth: FirebaseAuth
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        auth = FirebaseAuth.getInstance()
+
         setContent {
             SkillFlowTheme {
-                SignupScreen()
+                SignupScreen(auth)
             }
         }
     }
 }
 
 @Composable
-fun SignupScreen() {
+fun SignupScreen(auth: FirebaseAuth) {
     val context = LocalContext.current
 
     var name by remember { mutableStateOf("") }
@@ -53,6 +62,7 @@ fun SignupScreen() {
     var confirmPassword by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
     var confirmPasswordVisible by remember { mutableStateOf(false) }
+    var isLoading by remember { mutableStateOf(false) }
 
     Box(
         modifier = Modifier
@@ -153,22 +163,67 @@ fun SignupScreen() {
             // Signup Button
             Button(
                 onClick = {
+                    if (isLoading) return@Button
+
                     when {
                         name.isBlank() || email.isBlank() || password.isBlank() || confirmPassword.isBlank() ->
                             Toast.makeText(context, "Please fill all fields", Toast.LENGTH_SHORT).show()
 
+                        password.length < 6 ->
+                            Toast.makeText(context, "Password must be at least 6 characters", Toast.LENGTH_SHORT).show()
+
                         password != confirmPassword ->
                             Toast.makeText(context, "Passwords do not match", Toast.LENGTH_SHORT).show()
 
-                        else ->
-                            Toast.makeText(context, "Account created (placeholder)", Toast.LENGTH_SHORT).show()
-                        // TODO: Later connect to Firebase Auth
+                        else -> {
+                            isLoading = true
+                            auth.createUserWithEmailAndPassword(email.trim(), password)
+                                .addOnCompleteListener { task ->
+                                    isLoading = false
+                                    if (task.isSuccessful) {
+                                        val user = auth.currentUser
+                                        // Optionally update display name
+                                        if (user != null && name.isNotBlank()) {
+                                            val profileUpdates = userProfileChangeRequest {
+                                                displayName = name
+                                            }
+                                            user.updateProfile(profileUpdates)
+                                        }
+
+                                        Toast.makeText(
+                                            context,
+                                            "Account created successfully",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+
+                                        // Go to Login screen after signup
+                                        val intent = Intent(context, LoginPageActivity::class.java)
+                                        context.startActivity(intent)
+                                    } else {
+                                        Toast.makeText(
+                                            context,
+                                            task.exception?.message ?: "Signup failed",
+                                            Toast.LENGTH_LONG
+                                        ).show()
+                                    }
+                                }
+                        }
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp)
+                shape = RoundedCornerShape(12.dp),
+                enabled = !isLoading
             ) {
-                Text("Sign Up")
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier
+                            .size(20.dp),
+                        strokeWidth = 2.dp,
+                        color = Color.White
+                    )
+                } else {
+                    Text("Sign Up")
+                }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -181,7 +236,6 @@ fun SignupScreen() {
                     context.startActivity(intent)
                 }
             )
-
         }
     }
 }
